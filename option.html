@@ -1,0 +1,82 @@
+﻿<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Uska editor</title>
+    <link rel="stylesheet" type="text/css" href="normalize.css" />
+    <style>
+        .header{background:#222;border-radius:25px;color:#fff;overflow:hidden;padding:15px 25px 25px}
+        .header > .right{margin:10px 0 0}
+        .left{float:left}
+        .line {overflow:hidden}
+        .popup .line{margin-bottom:10px}
+        .popup > .dim{background:#000;filter:alpha(opacity=50);height:100%;left:0;opacity:.0;position:fixed;top:0;transition:all 250ms ease;visibility:hidden;width:100%}
+        .popup > section{opacity:0;position:fixed;top:50px;transition:all 150ms ease;visibility:hidden;min-width:700px;max-width:1200px;width:100%;z-index:1}
+        .popup._open > .dim{opacity:.5;visibility:visible}
+        .popup._open > section{opacity:1;top:57px;transition:all 200ms ease-out;visibility:visible}
+        .right{float:right}
+        .top{background-color:#fff;border-radius:0 0 25px 25px;box-shadow:2px 2px 10px 0 #bbb;overflow:hidden;padding:0 5px 0 25px}
+        .ver{font-weight:500;line-height:0;margin-bottom:20px}
+        body {background-color: #eee;margin: 0 auto;min-width:700px;max-width:1200px;min-height:500px}
+        button{background:#fff;border:0;border-radius:25px;color:#000;cursor:pointer;font-size:15px;font-weight:700;margin:5px;padding:15px 20px}
+        h1{font-size:20px}
+        h2{font-size:13px}
+        input{margin:5px}
+        input#activate,input#delete{display:none}
+        input[type=checkbox]:checked + label[for=activate]:before{background:#000;left:17px}
+        input[type=text],select,textarea{border:0;border-radius:25px;font-size:15px;padding:15px 20px}
+        label,ul > li,#meta{cursor:pointer}
+        label[for=activate]{margin:24px;border:2px solid;border-radius:100px;box-sizing:border-box;height:25px;position:relative;width:45px}
+        label[for=activate]:before{border:2px solid;border-radius:100px;box-sizing:border-box;content:'';height:25px;left:-2px;position:absolute;top:-2px;width:25px}
+        label[for=delete]{font-size:20px;font-weight:700;line-height:.8;margin:20px}
+        li{padding:20px 20px 20px 30px}
+        li:hover {
+            background:#eee
+        }
+        section{background-color:#fff;border-radius:25px;box-shadow:2px 2px 10px 0 rgba(0,0,0,0.2);margin:30px 0;overflow:hidden}
+        textarea{resize:vertical;width:100%}
+        textarea#free {height:calc(100vh - 400px)}
+        ul{list-style-type:none;margin:0px;padding:0px}
+    </style>
+</head>
+<body>
+    <div class="popup">
+        <section>
+            <div class="header">
+                <div class="line">
+                    <h1 class="left">스크립트 설정</h1>
+                    <input type="button" id="delete" />
+                    <label for="delete" class="right">X</label>
+                </div>
+                <div class="line">
+                    <div class="right">
+                        <button data-action="delete">Delete</button>
+                        <button data-action="save">Save</button>
+                    </div>
+                    <select name="action">
+                        <option value="user agent">user agent</option>
+                        <option value="instant">instant</option>
+                        <option value="style">style</option>
+                        <option value="key">key</option>
+                    </select>
+                    <input type="text" name="name" placeholder="스크립트 이름" style="width:calc(100% - 450px)">
+                    <input type="text" name="key" placeholder="키 입력" style="width:80px">
+                </div>
+                <textarea name="url" placeholder="적용할 URL (엔터키로 구분합니다.)"></textarea>
+            </div>
+            <textarea id="free" name="script" placeholder="스크립트 입력란"></textarea>
+        </section>
+        <div class="dim"></div>
+    </div>  
+    <div class="top">
+        <img class="left" src="/image/icon.png" style="width:40px;height:40px;margin:10px 10px 10px 0px;filter:grayscale(1);">
+        <h1 style="float:left; margin-top:16px;">Uska editor 0.24</h1>
+
+        <div class="right">
+            <h2 data-action="source" style="cursor:pointer;display:inline-block;">오픈소스 사용 정보</h2>
+            <button data-action="import">Import</button>
+            <button class="right" data-action="add">Add</button>
+        </div>
+    </div>
+    <script src="script/option.js"></script>
+</body>
+</html>
