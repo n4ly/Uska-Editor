@@ -1,82 +1,2427 @@
-﻿<html>
+<!DOCTYPE html>
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <title>Uska editor</title>
-    <link rel="stylesheet" type="text/css" href="normalize.css" />
+    <link rel="stylesheet" href="lib/codemirror/codemirror.min.css">
+    <script src="lib/option/theme-init.js"></script>
     <style>
-        .header{background:#222;border-radius:25px;color:#fff;overflow:hidden;padding:15px 25px 25px}
-        .header > .right{margin:10px 0 0}
-        .left{float:left}
-        .line {overflow:hidden}
-        .popup .line{margin-bottom:10px}
-        .popup > .dim{background:#000;filter:alpha(opacity=50);height:100%;left:0;opacity:.0;position:fixed;top:0;transition:all 250ms ease;visibility:hidden;width:100%}
-        .popup > section{opacity:0;position:fixed;top:50px;transition:all 150ms ease;visibility:hidden;min-width:700px;max-width:1200px;width:100%;z-index:1}
-        .popup._open > .dim{opacity:.5;visibility:visible}
-        .popup._open > section{opacity:1;top:57px;transition:all 200ms ease-out;visibility:visible}
-        .right{float:right}
-        .top{background-color:#fff;border-radius:0 0 25px 25px;box-shadow:2px 2px 10px 0 #bbb;overflow:hidden;padding:0 5px 0 25px}
-        .ver{font-weight:500;line-height:0;margin-bottom:20px}
-        body {background-color: #eee;margin: 0 auto;min-width:700px;max-width:1200px;min-height:500px}
-        button{background:#fff;border:0;border-radius:25px;color:#000;cursor:pointer;font-size:15px;font-weight:700;margin:5px;padding:15px 20px}
-        h1{font-size:20px}
-        h2{font-size:13px}
-        input{margin:5px}
-        input#activate,input#delete{display:none}
-        input[type=checkbox]:checked + label[for=activate]:before{background:#000;left:17px}
-        input[type=text],select,textarea{border:0;border-radius:25px;font-size:15px;padding:15px 20px}
-        label,ul > li,#meta{cursor:pointer}
-        label[for=activate]{margin:24px;border:2px solid;border-radius:100px;box-sizing:border-box;height:25px;position:relative;width:45px}
-        label[for=activate]:before{border:2px solid;border-radius:100px;box-sizing:border-box;content:'';height:25px;left:-2px;position:absolute;top:-2px;width:25px}
-        label[for=delete]{font-size:20px;font-weight:700;line-height:.8;margin:20px}
-        li{padding:20px 20px 20px 30px}
-        li:hover {
-            background:#eee
+        /* ── Font ────────────────────────────────────────── */
+        @font-face {
+            font-family: 'Pretendard Variable';
+            src: url('lib/fonts/PretendardVariable.woff2') format('woff2-variations');
+            font-weight: 100 900;
+            font-display: swap;
         }
-        section{background-color:#fff;border-radius:25px;box-shadow:2px 2px 10px 0 rgba(0,0,0,0.2);margin:30px 0;overflow:hidden}
-        textarea{resize:vertical;width:100%}
-        textarea#free {height:calc(100vh - 400px)}
-        ul{list-style-type:none;margin:0px;padding:0px}
+
+        /* ── Tokens ─────────────────────────────────────── */
+        :root {
+            /* Palette */
+            --gray-950: #08090a;
+            --gray-900: #0f1011;
+            --gray-800: #161718;
+            --gray-700: #23252a;
+            --gray-600: #383b3f;
+            --gray-500: #62666d;
+            --gray-400: #8a8f98;
+            --gray-200: #d0d6e0;
+            --gray-50:  #f7f8f8;
+            --blue:     #5e6ad2;
+            --red:      #d21736;
+            --green:    #47c665;
+            --steel:    #d8dce6;
+            --amber:    #f37f19;
+            --violet:   #835af5;
+
+            /* Action dims */
+            --red-dim:    rgba(210, 23, 54, .12);
+            --green-dim:  rgba(39, 166, 68, .12);
+            --amber-dim:  rgba(240, 180, 41, .12);
+            --steel-dim:  rgba(255, 255, 255, .08);
+            --note:       var(--gray-400);
+            --note-dim:   rgba(138, 143, 152, .12);
+            --danger:     var(--red);
+            --danger-dim: var(--red-dim);
+            --violet-dim: rgba(130, 99, 241, 0.12);
+            --sky:        #38bdf8;
+            --sky-dim:    rgba(56, 189, 248, .12);
+
+            /* Radii */
+            --radius-sm: 4px;
+            --radius:    6px;
+            --radius-lg: 10px;
+        }
+
+        /* ── Light theme (default) ──────────────────────── */
+        html {
+            /* Semantic aliases */
+            --bg:             #f4f5f7;
+            --surface:        #ffffff;
+            --surface-raised: #eef0f3;
+            --border:         #dde1e7;
+            --border-strong:  #c5cad3;
+            --text:           #1a1b1e;
+            --text-muted:     #6b7280;
+            --text-sub:       #4b5563;
+            --text-dim:       #9ca3af;
+            --accent:         var(--blue);
+            --accent-dim:     rgba(94, 106, 210, .12);
+
+            /* Shadows */
+            --shadow-sm:       rgba(0,0,0,.06) 0px 2px 4px 0px;
+            --shadow-xl:       rgba(0,0,0,.12) 0px 4px 32px 0px;
+            --shadow-subtle:   rgba(0,0,0,.08) 0px 0px 0px 1px inset;
+            --shadow-subtle-2: rgba(0,0,0,.08) 0px 0px 0px 1px;
+            --shadow-btn:      rgba(0,0,0,.02) 0px 5px 2px 0px,
+                               rgba(0,0,0,.04) 0px 3px 2px 0px,
+                               rgba(0,0,0,.06) 0px 1px 1px 0px,
+                               rgba(0,0,0,.08) 0px 0px 1px 0px;
+
+            /* CodeMirror */
+            --cm-text:              #24292f;
+            --cm-cursor:            #24292f;
+            --cm-selection:         rgba(94,106,210,.18);
+            --cm-selection-focused: rgba(94,106,210,.24);
+
+            /* Interactive overlays */
+            --overlay-hover:            rgba(0,0,0,.04);
+            --overlay-border:           rgba(0,0,0,.10);
+            --input-color-border:       rgba(0,0,0,.14);
+            --input-color-border-hover: rgba(0,0,0,.25);
+
+            /* Scrollbar */
+            --scrollbar:       #ccc;
+            --scrollbar-hover: #bbb;
+        }
+
+        /* ── Dark theme ──────────────────────────────────── */
+        html.theme-dark {
+            --bg:             var(--gray-950);
+            --surface:        var(--gray-900);
+            --surface-raised: var(--gray-800);
+            --border:         var(--gray-700);
+            --border-strong:  var(--gray-600);
+            --text:           var(--gray-50);
+            --text-muted:     var(--gray-400);
+            --text-sub:       var(--gray-200);
+            --text-dim:       var(--gray-500);
+            --accent-dim:     rgba(94, 106, 210, .15);
+
+            --shadow-sm:       rgba(0,0,0,.4) 0px 2px 4px 0px;
+            --shadow-xl:       rgba(8,9,10,.6) 0px 4px 32px 0px;
+            --shadow-subtle:   rgb(35,37,42) 0px 0px 0px 1px inset;
+            --shadow-subtle-2: rgba(0,0,0,.2) 0px 0px 0px 1px;
+            --shadow-btn:      rgba(0,0,0,.01) 0px 5px 2px 0px,
+                               rgba(0,0,0,.04) 0px 3px 2px 0px,
+                               rgba(0,0,0,.07) 0px 1px 1px 0px,
+                               rgba(0,0,0,.08) 0px 0px 1px 0px;
+
+            --cm-text:              #cdd6f4;
+            --cm-cursor:            #cdd6f4;
+            --cm-selection:         rgba(94,106,210,.22);
+            --cm-selection-focused: rgba(94,106,210,.28);
+
+            --overlay-hover:            rgba(255,255,255,.04);
+            --overlay-border:           rgba(255,255,255,.08);
+            --input-color-border:       rgba(255,255,255,.14);
+            --input-color-border-hover: rgba(255,255,255,.30);
+
+            --scrollbar:       var(--gray-700);
+            --scrollbar-hover: var(--gray-600);
+        }
+
+        /* ── Base ────────────────────────────────────────── */
+        *, *::before, *::after { box-sizing: border-box; }
+        body {
+            min-width: 680px;
+            min-height: 600px;
+            height: 100vh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Pretendard Variable', 'Pretendard', ui-sans-serif, system-ui,
+                         -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 13px;
+            line-height: 1.5;
+            letter-spacing: -0.11px;
+        }
+        h1, h2, p { margin: 0; font-weight: inherit; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        .sidebar::-webkit-scrollbar-track { margin: 66px 0px 8px 0px;}
+        ::-webkit-scrollbar-thumb {
+            background: var(--scrollbar);
+            border-radius: 3px;
+            transition: all 0.25s ease;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--scrollbar-hover);
+            transition: all 0.25s ease;
+        }
+
+        /* ── Global utility ──────────────────────────────── */
+        ._hidden { display: none !important; }
+
+        /* ── App header ──────────────────────────────────── */
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            padding: 16px 14px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        #option {
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            cursor: pointer;
+            flex-shrink: 0;
+            opacity: .8;
+            transition: opacity .15s;
+        }
+        #option:hover { opacity: 1; }
+        #option img { width: 100%; height: 100%; display: block; }
+        .logo-svg { height: 28px; width: auto; display: block; }
+        html.theme-dark .logo-svg { filter: brightness(0) invert(1); opacity: 0.85; }
+
+        .sidebar-header { justify-content: space-between; }
+        .settings-btn {
+            width: 28px; height: 28px;
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: var(--radius);
+            color: var(--text-muted);
+            flex-shrink: 0;
+            padding: 0;
+            transition: color .15s, background .15s, border-color .15s;
+        }
+        .settings-btn:hover {
+            color: var(--text);
+            background: var(--surface-raised);
+            border-color: var(--border-strong);
+            opacity: 1;
+        }
+
+        /* ── Settings popup ──────────────────────────────── */
+        .settings-dim {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,.6);
+            z-index: 10;
+            backdrop-filter: blur(2px);
+        }
+        .settings-popup {
+            display: none;
+            flex-direction: column;
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            width: 480px;
+            max-height: 80vh;
+            z-index: 20;
+            box-shadow: var(--shadow-xl), var(--shadow-subtle);
+            overflow: hidden;
+        }
+        .settings-popup .popup-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px 10px 16px;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface);
+            flex-shrink: 0;
+        }
+        .settings-popup .popup-body {
+            flex: 1;
+            overflow-y: auto;
+
+            padding: 16px 32px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .settings-popup .popup-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            border-top: 1px solid var(--border);
+            background: var(--surface);
+            flex-shrink: 0;
+        }
+        #us-warning-dismiss-btn { margin-right: auto; }
+        #us-warning-popup { width: 420px; }
+        #us-warning-popup .popup-body { gap: 16px; }
+        #us-warning-popup .us-warning-p1 { font-size: 13px; line-height: 1.7; color: var(--text); margin: 0; }
+        #us-warning-popup .us-warning-p2 { font-size: 12px; line-height: 1.7; color: var(--text-muted); margin: 0; }
+        #us-warning-popup .us-warning-steps { font-size: 13px; line-height: 2; color: var(--text-muted); margin: 0; padding-left: 20px; }
+        #us-warning-popup code {
+            font-size: 12px;
+            background: var(--surface-raised);
+            padding: 1px 5px;
+            border-radius: 3px;
+        }
+        /* ── Import select modal ────────────────────────── */
+        .import-select-dim {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,.6);
+            z-index: 30;
+            backdrop-filter: blur(2px);
+        }
+        .import-select-popup {
+            display: none;
+            flex-direction: column;
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            width: 400px;
+            max-height: 70vh;
+            z-index: 40;
+            box-shadow: var(--shadow-xl), var(--shadow-subtle);
+            overflow: hidden;
+        }
+        .import-select-body {
+            list-style: none;
+            margin: 0;
+            flex: 1;
+            overflow-y: auto;
+            scrollbar-gutter: stable;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .import-group-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            border-radius: var(--radius);
+            cursor: pointer;
+            user-select: none;
+        }
+        .import-group-item:hover { background: var(--surface-raised); }
+        .import-group-check {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .igr-toggle {
+            width: 28px; height: 16px;
+            background: transparent;
+            border: 2px solid var(--border-strong);
+            border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: background .15s, border-color .15s;
+        }
+        .igr-toggle::after { display: none; }
+        .import-group-check:checked ~ .igr-toggle {
+            background: var(--text-muted);
+            border-color: var(--text-muted);
+        }
+        .import-group-check:checked ~ .igr-toggle::after {
+            content: '';
+            display: block;
+            width: 8px; height: 5px;
+            border-left: 2px solid #fff;
+            border-bottom: 2px solid #fff;
+            transform: rotate(-45deg) translateY(-1px);
+        }
+        .import-group-item .igr-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .import-group-item .igr-name {
+            flex: 1;
+            font-size: 13px;
+            color: var(--text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .import-group-item .igr-count {
+            font-size: 11px;
+            color: var(--text-muted);
+            flex-shrink: 0;
+        }
+
+        /* ── Settings rows ───────────────────────────────── */
+        .settings-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+            gap: 40px;
+        }
+        .settings-row:last-child { border-bottom: none; }
+        .settings-row-info { display: flex; flex-direction: column; gap: 2px; }
+        .settings-row-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text);
+        }
+        .settings-row-sub {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+        .settings-reset-btn {
+            flex-shrink: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            padding: 6px 12px;
+            border-radius: var(--radius);
+            font-size: 12px;
+            font-family: inherit;
+            font-weight: 500;
+            line-height: 1;
+            letter-spacing: -0.1px;
+            white-space: nowrap;
+            background: transparent;
+            color: var(--danger);
+            border: 1px solid rgba(210,23,54,.3);
+            transition: background .12s, border-color .12s;
+        }
+        .settings-reset-btn:hover { background: var(--danger-dim); opacity: 1; }
+        .theme-segmented {
+            display: flex;
+            background: var(--surface-raised);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 2px;
+            gap: 2px;
+        }
+        .theme-seg-btn {
+            padding: 4px 14px;
+            border-radius: calc(var(--radius) - 2px);
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 12px;
+            font-weight: 500;
+            transition: background .12s, color .12s, box-shadow .12s;
+        }
+        .theme-seg-btn:hover { opacity: 1; color: var(--text); }
+        .theme-seg-btn._active {
+            background: var(--surface);
+            color: var(--text);
+            box-shadow: var(--shadow-subtle-2);
+        }
+
+        /* ── Buttons ─────────────────────────────────────── */
+        button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            cursor: pointer;
+            padding: 6px 12px;
+            border: 1px solid transparent;
+            border-radius: var(--radius);
+            font-size: 12px;
+            font-family: inherit;
+            font-weight: 500;
+            line-height: 1;
+            letter-spacing: -0.1px;
+            transition: opacity .12s, background .12s, box-shadow .12s, border-color .12s;
+            white-space: nowrap;
+        }
+        button:hover { opacity: .82; }
+        .btn-primary {
+            background: var(--gray-600);
+            color: var(--gray-50);
+            font-weight: 600;
+            border-color: var(--border-strong);
+            box-shadow: none;
+        }
+        .btn-primary:hover { opacity: .9; }
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--surface-raised);
+            color: var(--text-sub);
+            border-color: var(--border-strong);
+        }
+        .btn-ghost {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: transparent;
+            color: var(--text-muted);
+            padding: 6px;
+            border-color: transparent;
+        }
+        .btn-ghost:hover { background: var(--surface-raised); color: var(--text); opacity: 1; }
+        .select-action-copy { border-color: var(--border-strong); }
+
+        /* ── Layout ──────────────────────────────────────── */
+        .layout {
+            display: flex;
+            overflow: hidden;
+            gap: 4px;
+            margin: 4px auto;
+            width: calc(100% - 8px);
+            max-width: 1200px;
+            flex: 1;
+        }
+
+        /* ── Sidebar ─────────────────────────────────────── */
+        .sidebar {
+            width: 220px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            box-shadow: var(--shadow-subtle);
+            background: var(--surface);
+            overflow-y: auto;
+
+            border-radius: 10px;
+        }
+        .sidebar-list {
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .sidebar-footer {
+            padding: 0 8px 8px;
+            display: flex;
+            gap: 4px;
+        }
+        .sidebar-footer .sf-add {
+            flex: 1;
+            justify-content: center;
+            padding: 6px 10px;
+            font-size: 12px;
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px dashed var(--border-strong);
+            border-radius: var(--radius);
+        }
+        .sidebar-footer .sf-import {
+            padding: 6px 8px;
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px dashed var(--border-strong);
+            border-radius: var(--radius);
+            flex-shrink: 0;
+        }
+        .sidebar-footer button:hover { background: var(--surface-raised); color: var(--text); opacity: 1; border-style: solid; }
+        .sidebar-group {
+            display: flex;
+            align-items: center;
+            padding: 6px 8px;
+            border-radius: var(--radius);
+            cursor: pointer;
+            gap: 8px;
+            user-select: none;
+            transition: background .1s;
+        }
+        .sidebar-group:hover { background: var(--overlay-hover); }
+        .sidebar-group._active {
+            background: var(--surface-raised);
+            box-shadow: var(--shadow-subtle);
+        }
+        .sg-dot {
+            width: 4px;
+            height: 28px;
+            border-radius: 4px;
+            flex-shrink: 0;
+            border: 1px solid var(--overlay-border);
+        }
+        .sg-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .sg-name {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-sub);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: color .1s;
+        }
+        .sidebar-group._active .sg-name { color: var(--text); }
+        .sg-count {
+            display: block;
+            font-size: 11px;
+            color: var(--text-muted);
+            letter-spacing: -0.1px;
+        }
+        .sg-active-count { color: var(--green); }
+
+        .sidebar-group._dragging { opacity: 0.35; }
+        .sidebar-group._group-drag-before { box-shadow: 0 -2px 0 var(--accent); }
+        .sidebar-group._group-drag-after  { box-shadow: 0  2px 0 var(--accent); }
+        .sidebar-group._script-drag-over  { background: var(--accent-dim); outline: 1px solid var(--accent); }
+
+        /* ── Content ─────────────────────────────────────── */
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .content-header {
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 16px;
+            gap: 12px;
+            background: var(--surface);
+            box-shadow: var(--shadow-subtle);
+            border-radius: 10px;
+            margin-bottom: 8px;
+        }
+        .ch-info { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; }
+        .ch-text { flex: 1; min-width: 0; }
+        .ch-name-wrap {
+            display: flex;
+            align-items: center;
+            gap: 0px;
+            flex: 1;
+            min-width: 0;
+        }
+        .ch-name {
+            flex: 0 1 auto;
+            min-width: 0;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            border-radius: var(--radius);
+            cursor: pointer;
+            letter-spacing: -0.13px;
+            padding: 6px 6px;
+            border: 1px solid transparent;
+            transition: border-color .15s, box-shadow .15s, background .15s;
+        }
+        .ch-name[contenteditable=true] {
+            flex: 1;
+            cursor: text;
+            outline: none;
+            white-space: normal;
+            overflow: visible;
+            background: var(--surface-raised);
+            border-color: var(--border-strong);
+        }
+        .ch-name[contenteditable=true]:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-dim);
+        }
+        .ch-name._error {
+            box-shadow: 0 0 0 2px var(--danger);
+            animation: input-shake .25s ease;
+        }
+        .ch-meta {
+            display: inline-block;
+            font-size: 12px;
+            color: var(--text-muted);
+            cursor: pointer;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+            margin: 0px 0px 6px 10px;
+            transition: color .15s;
+        }
+        .ch-meta:hover { color: var(--text); }
+        .ch-edit-icon {
+            display: flex;
+            align-items: center;
+            flex-shrink: 0;
+            color: var(--text-muted);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .15s;
+            padding: 6px 2px;
+        }
+        .ch-text:hover .ch-edit-icon { opacity: 1; pointer-events: auto; cursor: pointer; }
+        .ch-actions { display: flex; gap: 4px; flex-shrink: 0; align-items: center; }
+        .ch-action-group { display: flex; align-items: center; margin-right: 4px; }
+        .ch-delete-btn { color: var(--text-muted); padding: 6px; }
+        .ch-delete-btn:hover { color: var(--danger); background: var(--danger-dim); opacity: 1; }
+        .ch-divider {
+            width: 1px;
+            height: 16px;
+            background: var(--border-strong);
+            flex-shrink: 0;
+        }
+
+        /* ── Scripts area ────────────────────────────────── */
+        .scripts-container {
+            flex: 1;
+            overflow-y: auto;
+
+        }
+        .scripts-container._fade-bottom,
+        .sidebar._fade-bottom,
+        .popup-body._fade-bottom {
+            -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 16px), transparent 100%);
+            mask-image: linear-gradient(to bottom, black calc(100% - 16px), transparent 100%);
+        }
+        .scripts-container._fade-top,
+        .sidebar._fade-top,
+        .popup-body._fade-top {
+            -webkit-mask-image: linear-gradient(to bottom, transparent 0, black 16px, black 100%);
+            mask-image: linear-gradient(to bottom, transparent 0, black 16px, black 100%);
+        }
+        .scripts-container._fade-top._fade-bottom,
+        .sidebar._fade-top._fade-bottom,
+        .popup-body._fade-top._fade-bottom {
+            -webkit-mask-image: linear-gradient(to bottom, transparent 0, black 16px, black calc(100% - 16px), transparent 100%);
+            mask-image: linear-gradient(to bottom, transparent 0, black 16px, black calc(100% - 16px), transparent 100%);
+        }
+
+        /* ── Script list items ───────────────────────────── */
+        ul.line {
+            list-style: none;
+            margin: 0; padding: 0;
+        }
+        ul.line li.line {
+            display: flex;
+            align-items: center;
+            padding: 10px 10px 10px 6px;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            gap: 8px;
+            transition: all .15s;
+            border-radius: 0px;
+        }
+        ul.line li.line:hover { background: var(--surface); border-radius: 8px;}
+
+        ul.line li .left { flex: 1; min-width: 0; }
+        ul.line li .left h1 {
+            font-size: 14px;
+            font-weight: 400;
+            color: var(--text-sub);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            letter-spacing: -0.11px;
+            padding-right: 3px;
+        }
+        ul.line li:not([data-action=note]) .activate-check:not(:checked) ~ .left h1 { color: var(--border-strong); }
+        html.theme-dark ul.line li:not([data-action=note]) .activate-check:not(:checked) ~ .left h1 { color: var(--text-dim); }
+        .name-empty { color: var(--border-strong); font-style: italic; }
+        html.theme-dark .name-empty { color: var(--text-dim); }
+        .action-tag {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+            padding: 2px 6px;
+            border-radius: 2px;
+            border: 1px solid;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        li[data-action=instant]      .action-tag { color: var(--amber); background: var(--amber-dim); border-color: rgba(240,180,41,.30); }
+        li[data-action=style]        .action-tag { color: var(--green);   background: var(--green-dim);   border-color: rgba(39,166,68,.30); }
+        li[data-action=key]          .action-tag { color: var(--amber);   background: var(--amber-dim);   border-color: rgba(240,180,41,.30); }
+        li[data-action="user agent"] .action-tag { color: var(--violet);  background: var(--violet-dim);  border-color: rgba(99,102,241,.30); }
+        li[data-action=note]         .action-tag { color: var(--note);    background: var(--note-dim);    border-color: rgba(138,143,152,.30); }
+        li[data-action=block]        .action-tag { color: var(--violet); background: var(--violet-dim);   border-color: rgba(99,102,241,.30); }
+        li[data-action=gesture]      .action-tag { color: var(--amber);    background: var(--amber-dim);    border-color: rgba(240,180,41,.30); }
+        li[data-action=library]      .action-tag { color: var(--red);      background: var(--red-dim);      border-color: rgba(210,23,54,.30); }
+
+        li.line._dragging { opacity: 0.3; pointer-events: none; }
+        li.line._drag-before { box-shadow: inset 0 2px 0 var(--accent); }
+        li.line._drag-after  { box-shadow: inset 0 -2px 0 var(--accent); }
+        ul.line._drag-over   { background: var(--accent-dim); }
+
+        .line-placeholder {
+            padding: 40px 16px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 12px;
+            opacity: 0.45;
+            user-select: none;
+        }
+        ul.line._drag-over .line-placeholder { opacity: 0; }
+
+        /* ── Toggle switch ───────────────────────────────── */
+        .activate-check { display: none; }
+        label[data-action=activate] {
+            width: 28px; height: 16px;
+            background: transparent;
+            border: 2px solid var(--border-strong);
+            border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: background .15s, border-color .15s;
+        }
+        label[data-action=activate]::after { display: none; }
+        .activate-check:checked + label[data-action=activate] {
+            background: var(--text-muted);
+            border-color: var(--text-muted);
+        }
+        .activate-check:checked + label[data-action=activate]::after {
+            content: '';
+            display: block;
+            width: 8px; height: 5px;
+            border-left: 2px solid #fff;
+            border-bottom: 2px solid #fff;
+            transform: rotate(-45deg) translateY(-1px);
+        }
+        li[data-action=note] label[data-action=activate] {
+            background: var(--border);
+            border-color: var(--border);
+            cursor: default;
+        }
+        li[data-action=note] label[data-action=activate]::after { display: none !important; }
+        li._warn .activate-check:checked + label[data-action=activate] {
+            background: #e8622a;
+            border-color: #e8622a;
+        }
+        li._warn .activate-check:checked + label[data-action=activate]::after {
+            content: '···';
+            display: block;
+            width: auto; height: auto;
+            border: none;
+            transform: none;
+            font-size: 11px;
+            font-weight: 700;
+            line-height: 1;
+            color: #fff;
+        }
+        li._risk label[data-action=activate] {
+            border-color: var(--red);
+        }
+        li._risk .activate-check:checked + label[data-action=activate] {
+            background: var(--red);
+            border-color: var(--red);
+        }
+        li._risk .activate-check:checked + label[data-action=activate]::after {
+            content: '!';
+            display: block;
+            width: auto; height: auto;
+            border: none;
+            transform: none;
+            font-size: 11px;
+            font-weight: 700;
+            line-height: 1;
+            color: #fff;
+        }
+
+        /* ── Group toggle ────────────────────────────────── */
+        .sg-toggle-check { display: none; }
+        label[data-action=toggle-group] {
+            width: 28px; height: 16px;
+            background: transparent;
+            border: 2px solid var(--border-strong);
+            border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: background .15s, border-color .15s;
+        }
+        label[data-action=toggle-group]::after {
+            content: '';
+            display: block;
+            width: 8px; height: 5px;
+            border-left: 2px solid transparent;
+            border-bottom: 2px solid transparent;
+            transform: rotate(-45deg) translateY(-1px);
+        }
+        .sg-toggle-check:checked + label[data-action=toggle-group] {
+            background: var(--text-muted);
+            border-color: var(--text-muted);
+        }
+        .sg-toggle-check:checked + label[data-action=toggle-group]::after {
+            border-left-color: #fff;
+            border-bottom-color: #fff;
+        }
+        .sidebar-group._g-disabled .sg-dot,
+        .sidebar-group._g-disabled .sg-info { opacity: 0.4; }
+
+        /* ── Dim overlay ─────────────────────────────────── */
+        .dim {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,.8);
+            z-index: 10;
+        }
+
+        /* ── Modal popup transitions (settings / import-select / main popup 공통) ── */
+        @keyframes popup-in {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(1) translateY(26px);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1) translateY(0);
+            }
+        }
+        @keyframes popup-out {
+            from {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1) translateY(0);
+            }
+            to {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(1) translateY(26px);
+            }
+        }
+        @keyframes dim-in {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+        @keyframes dim-out {
+            from { opacity: 1; }
+            to   { opacity: 0; }
+        }
+        .settings-dim._open,
+        .import-select-dim._open,
+        .dim._open {
+            display: block;
+            animation: dim-in 0.2s ease;
+        }
+        .settings-dim._closing,
+        .import-select-dim._closing,
+        .dim._closing {
+            display: block;
+            animation: dim-out 0.15s ease-in forwards;
+        }
+        .settings-popup._open,
+        .import-select-popup._open,
+        .popup._open {
+            display: flex;
+            animation: popup-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .settings-popup._closing,
+        .import-select-popup._closing,
+        .popup._closing {
+            display: flex;
+            animation: popup-out 0.15s ease-in forwards;
+        }
+
+        /* ── Modal ───────────────────────────────────────── */
+        .popup {
+            display: none;
+            flex-direction: column;
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            width: calc(100vw - 120px);
+            max-width: 800px;
+            max-height: 90vh;
+            z-index: 20;
+            box-shadow: var(--shadow-xl), var(--shadow-subtle);
+            overflow: hidden;
+        }
+
+        .popup-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 10px 12px 10px 16px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+            background: var(--surface);
+        }
+        .popup-header .field-row { flex: 1; min-width: 0; margin: 0; }
+        .popup-header .field-label { display: none; }
+        .popup-header .field { gap: 0; }
+        .popup-header input[type=text],
+        .popup-header select { padding: 5px 8px; }
+        .popup .popup-header input[type=text] { background: transparent; border-color: transparent; }
+        .popup .popup-header input[type=text]:focus { background: var(--surface-raised); border-color: var(--accent); }
+        .popup-header select[name=group] {
+            background-color: var(--surface);
+            border: none;
+            border-right: 2px solid var(--border);
+            border-radius: 0;
+            
+        }
+        .popup-header select[name=group]:focus {
+            border: 1px solid var(--accent);
+            border-radius: var(--radius);
+            box-shadow: 0 0 0 3px var(--accent-dim);
+        }
+        .popup-header-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+            flex: 1;
+        }
+        .popup-header-right {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .popup-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+            line-height: 1;
+            letter-spacing: -0.13px;
+        }
+        .popup-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            padding: 4px 6px;
+            font-size: 14px;
+            line-height: 1;
+            cursor: pointer;
+            border-radius: var(--radius-sm);
+        }
+        .popup-close:hover { background: var(--surface-raised); color: var(--text); opacity: 1; }
+
+        .popup-body {
+            padding: 24px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
+
+            flex: 1;
+            background: var(--surface-raised);
+        }
+        .popup-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 16px;
+            border-top: 1px solid var(--border);
+            flex-shrink: 0;
+            gap: 8px;
+            background: var(--surface);
+        }
+        .popup-footer-right { display: flex; gap: 7px; margin-left: auto; }
+
+        /* ── Form fields ─────────────────────────────────── */
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .field-row {
+            display: flex;
+            gap: 8px;
+        }
+        .field-row .field[data-field=group]      { flex: 3; }
+        .field-row .field[data-field=name]       { flex: 7; }
+
+        .field-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0em;
+            user-select: none;
+            margin-bottom: 2px;
+        }
+        /* 편집 모달에서 warn/risk 항목 편집 시, 원인 필드의 라벨 옆에 사유 표시 */
+        .field-warn-msg {
+            margin-left: 6px;
+            font-weight: 600;
+            text-transform: none;
+            letter-spacing: -0.05px;
+            font-size: 11px;
+        }
+        .field._warn-edit .field-warn-msg { color: var(--amber); }
+        .field._risk-edit .field-warn-msg { color: var(--red); }
+        .field-hint {
+            font-weight: 400;
+            text-transform: none;
+            letter-spacing: 0;
+            opacity: .75;
+            font-size: 11px;
+        }
+        .popup input[type=text],
+        .popup input[type=number],
+        .popup select,
+        .popup textarea {
+            width: 100%;
+            background: var(--bg);
+            color: var(--text);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius);
+            padding: 8px 10px;
+            font-size: 13px;
+            font-family: inherit;
+            letter-spacing: -0.11px;
+            transition: border-color .15s, box-shadow .15s;
+        }
+        .popup input[type=text]:focus,
+        .popup input[type=number]:focus,
+        .popup select:focus,
+        .popup textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-dim);
+        }
+        .popup input[type=text]::placeholder,
+        .popup input[type=number]::placeholder,
+        .popup textarea::placeholder { color: var(--text-muted); opacity: .5; }
+        .popup input[type=number] { -moz-appearance: textfield; }
+        .popup input[type=number]::-webkit-inner-spin-button,
+        .popup input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+        .popup select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23666'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            padding-right: 28px;
+            cursor: pointer;
+        }
+
+        .action-display {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+            padding: 3px 8px;
+            border-radius: 2px;
+            align-self: flex-start;
+        }
+        .action-display[data-value="instant"]    { color: var(--amber); background: var(--amber-dim); }
+        .action-display[data-value="style"]      { color: var(--green);   background: var(--green-dim); }
+        .action-display[data-value="key"]        { color: var(--amber);   background: var(--amber-dim); }
+        .action-display[data-value="user agent"] { color: var(--violet);  background: var(--violet-dim); }
+        .action-display[data-value="note"]       { color: var(--note);    background: var(--note-dim); }
+        .action-display[data-value="block"]      { color: var(--violet); background: var(--violet-dim); }
+        .action-display[data-value="gesture"]    { color: var(--amber);    background: var(--amber-dim); }
+        .action-display[data-value="library"]    { color: var(--red);      background: var(--red-dim); }
+        .popup textarea {
+            resize: vertical;
+            height: 72px;
+            line-height: 1.6;
+        }
+        .popup textarea[name=script-import] { height: 280px; }
+        .field[data-field=url] .CodeMirror {
+            height: auto;
+            border-radius: var(--radius);
+            border: 1px solid var(--border-strong);
+            background: var(--bg);
+            color: var(--cm-text);
+            font-family: 'Berkeley Mono', 'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.75;
+            transition: border-color .15s, box-shadow .15s;
+        }
+        .field[data-field=url] .CodeMirror-focused {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-dim);
+        }
+        .field[data-field=url] .CodeMirror-scroll {
+            min-height: 21px;
+            overflow-y: hidden !important;
+        }
+        .field[data-field=url] .CodeMirror-gutters {
+            background: var(--bg);
+            border-right: 1px solid var(--border);
+        }
+        .field[data-field=url] .CodeMirror-linenumber { color: var(--text-dim); padding: 0 4px 0 8px; }
+        .field[data-field=url] .CodeMirror-cursor { border-left-color: var(--cm-cursor); }
+        .field[data-field=url] .CodeMirror-selected { background: var(--cm-selection); }
+        .field[data-field=url] .CodeMirror-focused .CodeMirror-selected { background: var(--cm-selection-focused); }
+        .field[data-field=script] .CodeMirror {
+            height: auto;
+            min-height: 160px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border-strong);
+            background: var(--bg);
+            color: var(--cm-text);
+            font-family: 'Berkeley Mono', 'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.75;
+            transition: border-color .15s, box-shadow .15s;
+        }
+        .field[data-field=script] .CodeMirror-focused {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-dim);
+        }
+        .field[data-field=script] .CodeMirror-scroll { min-height: 140px; overflow-y: hidden !important; }
+        .field[data-field=script] .CodeMirror-gutters {
+            background: var(--bg);
+            border-right: 1px solid var(--border);
+        }
+        .field[data-field=script] .CodeMirror-linenumber { color: var(--text-dim); padding: 0 4px 0 8px; }
+        .field[data-field=script] .CodeMirror-cursor { border-left-color: var(--cm-cursor); }
+        .field[data-field=script] .CodeMirror-selected { background: var(--cm-selection); }
+        .field[data-field=script] .CodeMirror-focused .CodeMirror-selected { background: var(--cm-selection-focused); }
+        .cm-statusbar {
+            display: flex;
+            justify-content: flex-end;
+            padding: 3px 8px;
+            background: var(--bg);
+            border: 1px solid var(--border-strong);
+            border-top: none;
+            border-radius: var(--radius);
+        }
+        .cm-cursor-pos {
+            font-size: 11px;
+            color: var(--text-dim);
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 0;
+        }
+        .library-hint {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 6px;
+            padding: 8px 12px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+        }
+        .lh-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+        .lh-row { display: flex; gap: 20px; }
+        .lh-col { display: flex; flex-direction: column; gap: 3px; }
+        .library-hint code {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: var(--text-muted);
+            white-space: nowrap;
+            line-height: 1.6;
+        }
+        .library-hint code em { color: var(--text); font-style: normal; }
+        .popup [data-field=library-id] input[type=text] { font-family: 'Berkeley Mono', 'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'Courier New', monospace; }
+        .input-prefix-wrap {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius);
+            transition: border-color .15s, box-shadow .15s;
+        }
+        .input-prefix-wrap:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-dim);
+        }
+        .input-prefix-wrap .input-prefix {
+            padding: 0 4px 0 10px;
+            color: var(--text-muted);
+            font-family: 'Berkeley Mono', 'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'Courier New', monospace;
+            font-size: 13px;
+            white-space: nowrap;
+            user-select: none;
+        }
+        .input-prefix-wrap input[type=text] {
+            flex: 1;
+            border: none !important;
+            box-shadow: none !important;
+            background: transparent;
+            padding-left: 0;
+        }
+        .CodeMirror pre.CodeMirror-line, .CodeMirror pre.CodeMirror-line-like {
+            padding: 0px 8px;
+        }
+        .field[data-field=script-import] .CodeMirror,
+        .field[data-field=group-import]  .CodeMirror {
+            height: auto;
+            min-height: 200px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border-strong);
+            background: var(--bg);
+            color: var(--cm-text);
+            font-family: 'Berkeley Mono', 'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.75;
+            transition: border-color .15s, box-shadow .15s;
+        }
+        .field[data-field=script-import] .CodeMirror-focused,
+        .field[data-field=group-import]  .CodeMirror-focused {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-dim);
+        }
+        .field[data-field=script-import] .CodeMirror-scroll,
+        .field[data-field=group-import]  .CodeMirror-scroll { min-height: 180px; overflow-y: hidden !important; }
+        .field[data-field=script-import] .CodeMirror-gutters,
+        .field[data-field=group-import]  .CodeMirror-gutters {
+            background: var(--bg);
+            border-right: 1px solid var(--border);
+        }
+        .field[data-field=script-import] .CodeMirror-linenumber,
+        .field[data-field=group-import]  .CodeMirror-linenumber { color: var(--text-dim); padding: 0 4px 0 8px; }
+        .field[data-field=script-import] .CodeMirror-cursor,
+        .field[data-field=group-import]  .CodeMirror-cursor { border-left-color: var(--cm-cursor); }
+        .field[data-field=script-import] .CodeMirror-selected,
+        .field[data-field=group-import]  .CodeMirror-selected { background: var(--cm-selection); }
+        .field[data-field=script-import] .CodeMirror-focused .CodeMirror-selected,
+        .field[data-field=group-import]  .CodeMirror-focused .CodeMirror-selected { background: var(--cm-selection-focused); }
+
+        /* CM5 syntax tokens (GitHub Light) */
+        .field[data-field=script] .cm-keyword    { color: #cf222e; }
+        .field[data-field=script] .cm-atom       { color: #0550ae; }
+        .field[data-field=script] .cm-number     { color: #0550ae; }
+        .field[data-field=script] .cm-def        { color: #6639ba; }
+        .field[data-field=script] .cm-variable   { color: #24292f; }
+        .field[data-field=script] .cm-variable-2 { color: #953800; }
+        .field[data-field=script] .cm-comment    { color: #6e7781; font-style: italic; }
+        .field[data-field=script] .cm-string     { color: #0a3069; }
+        .field[data-field=script] .cm-string-2   { color: #0a3069; }
+        .field[data-field=script] .cm-operator   { color: #cf222e; }
+        .field[data-field=script] .cm-meta       { color: #6639ba; }
+        .field[data-field=script] .cm-builtin    { color: #6639ba; }
+        .field[data-field=script] .cm-tag        { color: #116329; }
+        .field[data-field=script] .cm-attribute  { color: #953800; }
+        .field[data-field=script] .cm-property   { color: #0550ae; }
+        .field[data-field=script] .cm-qualifier  { color: #116329; }
+        .field[data-field=script] .cm-error      { color: #cf222e; background: rgba(207,34,46,.10); }
+
+        /* Dark theme syntax tokens (Catppuccin) */
+        html.theme-dark .field[data-field=script] .cm-keyword    { color: #cba6f7; }
+        html.theme-dark .field[data-field=script] .cm-atom       { color: #fab387; }
+        html.theme-dark .field[data-field=script] .cm-number     { color: #fab387; }
+        html.theme-dark .field[data-field=script] .cm-def        { color: #89b4fa; }
+        html.theme-dark .field[data-field=script] .cm-variable   { color: #cdd6f4; }
+        html.theme-dark .field[data-field=script] .cm-variable-2 { color: #89b4fa; }
+        html.theme-dark .field[data-field=script] .cm-comment    { color: #585b70; font-style: italic; }
+        html.theme-dark .field[data-field=script] .cm-string     { color: #a6e3a1; }
+        html.theme-dark .field[data-field=script] .cm-string-2   { color: #a6e3a1; }
+        html.theme-dark .field[data-field=script] .cm-operator   { color: #89dceb; }
+        html.theme-dark .field[data-field=script] .cm-meta       { color: #cba6f7; }
+        html.theme-dark .field[data-field=script] .cm-builtin    { color: #f38ba8; }
+        html.theme-dark .field[data-field=script] .cm-tag        { color: #f38ba8; }
+        html.theme-dark .field[data-field=script] .cm-attribute  { color: #fab387; }
+        html.theme-dark .field[data-field=script] .cm-property   { color: #89b4fa; }
+        html.theme-dark .field[data-field=script] .cm-qualifier  { color: #a6e3a1; }
+        html.theme-dark .field[data-field=script] .cm-error      { color: #f38ba8; background: rgba(243,139,168,.15); }
+
+        /* ── Color input ─────────────────────────────── */
+        .theme-color-input {
+            width: 24px; height: 24px;
+            border-radius: 4px;
+            border: 1.5px solid var(--input-color-border);
+            padding: 0;
+            cursor: pointer;
+            flex-shrink: 0;
+            background: none;
+            transition: border-color .15s, transform .1s;
+        }
+        .theme-color-input:hover { border-color: var(--input-color-border-hover); transform: scale(1.1); }
+        .theme-color-input::-webkit-color-swatch-wrapper { padding: 0; }
+        .theme-color-input::-webkit-color-swatch { border: none; border-radius: 2px; }
+
+        .popup [data-action=save] { display: none !important; }
+        .popup [data-action=delete] {
+            background: transparent;
+            color: var(--danger);
+            border-color: rgba(235,87,87,.3);
+            padding: 6px 12px;
+        }
+        .popup [data-action=delete]:hover { background: var(--danger-dim); color: var(--danger); opacity: 1; }
+        .popup [data-action=discard] {
+            background: transparent;
+            color: var(--text-muted);
+            border-color: var(--border-strong);
+            padding: 6px 12px;
+        }
+        .popup [data-action=discard]:hover { background: var(--surface-raised); color: var(--text); opacity: 1; }
+
+        @keyframes input-shake {
+            0%, 100% { transform: translateX(0); }
+            20%       { transform: translateX(-4px); }
+            60%       { transform: translateX(4px); }
+            80%       { transform: translateX(-2px); }
+        }
+        .popup input._error,
+        .popup textarea._error {
+            border-color: var(--danger) !important;
+            box-shadow: 0 0 0 3px var(--danger-dim) !important;
+            animation: input-shake .25s ease;
+        }
+
+        /* ── Action select grid ──────────────────────────── */
+        .action-select-categories {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin: 20px 20px;
+        }
+        .asb-cat-label {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            margin-bottom: 4px;
+            display: block;
+        }
+        .asb-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .action-select-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
+            padding: 14px 16px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            text-align: left;
+            transition: background .12s, border-color .12s;
+            box-shadow: var(--shadow-subtle-2);
+        }
+        .action-select-btn:hover { background: var(--bg); opacity: 1; }
+        .asb-name {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+        }
+        .asb-desc {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 400;
+            width: 100%;
+            white-space: normal;
+            line-height: 1.4;
+            letter-spacing: -0.1px;
+            word-break: keep-all;
+        }
+        .action-select-btn[data-value="instant"]    .asb-name { color: var(--amber); }
+        .action-select-btn[data-value="style"]      .asb-name { color: var(--green); }
+        .action-select-btn[data-value="key"]        .asb-name { color: var(--amber); }
+        .action-select-btn[data-value="user agent"] .asb-name { color: var(--violet); }
+        .action-select-btn[data-value="note"]       .asb-name { color: var(--note); }
+        .action-select-btn[data-value="block"]      .asb-name { color: var(--violet); }
+        .action-select-btn[data-value="instant"]:hover    { border-color: var(--amber); }
+        .action-select-btn[data-value="style"]:hover      { border-color: var(--green); }
+        .action-select-btn[data-value="key"]:hover        { border-color: var(--amber); }
+        .action-select-btn[data-value="user agent"]:hover { border-color: var(--violet); }
+        .action-select-btn[data-value="note"]:hover       { border-color: var(--note); }
+        .action-select-btn[data-value="block"]:hover      { border-color: var(--violet); }
+        .action-select-btn[data-value="gesture"] .asb-name { color: var(--amber); }
+        .action-select-btn[data-value="gesture"]:hover { border-color: var(--amber); }
+        .action-select-btn[data-value="library"] .asb-name { color: var(--red); }
+        .action-select-btn[data-value="library"]:hover { border-color: var(--red); }
+
+        /* ── Open source license list ───────────────────────── */
+        .license-list {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .license-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            text-decoration: none;
+            color: var(--text);
+            transition: background .12s, border-color .12s;
+        }
+        .license-item:hover { background: var(--surface-raised); border-color: var(--border-strong); opacity: 1; }
+        .license-name { font-size: 13px; font-weight: 500; }
+        .license-meta { font-size: 11px; color: var(--text-muted); text-align: right; line-height: 1.6; }
+
+        /* ── Field label row ────────────────────────────────── */
+        .field-label-row {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+        }
+        [data-field=timing] .field-label-row { justify-content: flex-end; gap: 8px; align-items: center; }
+
+        /* ── Key input-allow toggle ──────────────────────────── */
+        .key-input-allow-wrap {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+        .key-input-allow-check { display: none; }
+        .key-input-allow-label {
+            width: 28px; height: 16px;
+            background: transparent;
+            border: 2px solid var(--border-strong);
+            border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: background .15s, border-color .15s;
+        }
+        .key-input-allow-label::after {
+            content: '';
+            display: block;
+            width: 8px; height: 5px;
+            border-left: 2px solid transparent;
+            border-bottom: 2px solid transparent;
+            transform: rotate(-45deg) translateY(-1px);
+        }
+        .key-input-allow-check:checked + .key-input-allow-label {
+            background: var(--text-muted);
+            border-color: var(--text-muted);
+        }
+        .key-input-allow-check:checked + .key-input-allow-label::after {
+            border-left-color: #fff;
+            border-bottom-color: #fff;
+        }
+        .key-input-allow-text {
+            font-size: 12px;
+            color: var(--text-muted);
+            white-space: nowrap;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        /* ── Key record widget ──────────────────────────────── */
+        .key-record-wrap { display: flex; }
+        .key-input-wrap {
+            flex: 1;
+            display: flex;
+            align-items: stretch;
+            background: var(--bg);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius);
+            overflow: hidden;
+            transition: border-color .15s, box-shadow .15s;
+        }
+        .key-input-wrap:has(input._recording) {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-dim);
+        }
+        .key-record-wrap input[name=key] { display: none; }
+        .key-chip-display {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 4px;
+            padding: 6px 4px;
+        }
+        .key-chip-placeholder {
+            font-size: 12px;
+            color: var(--text-muted);
+            opacity: .45;
+            user-select: none;
+        }
+        .key-record-btn {
+            flex-shrink: 0;
+            background: var(--surface-raised);
+            border: none;
+            border: 1px solid var(--border-strong);
+            border-radius: 0;
+            margin: 8px;
+            padding: 6px 10px;
+            border-radius: var(--radius-sm);
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+        .key-record-btn::before {
+            content: '';
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: currentColor;
+            flex-shrink: 0;
+        }
+        .key-record-btn:hover { background: var(--surface); color: var(--text); opacity: 1; }
+        .key-record-btn._recording {
+            background: var(--danger-dim);
+            border-color: rgba(235,87,87,.3);
+            color: var(--danger);
+            opacity: 1;
+        }
+        .key-clear-btn {
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0px 12px;
+            background: transparent;
+            border: none;
+            border-left: 1px solid transparent;
+            border-radius: 0;
+            color: var(--text-muted);
+            font-size: 13px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .12s, background .12s, color .12s, border-color .12s;
+        }
+        .key-input-wrap:has(input[value]:not([value=''])) .key-clear-btn,
+        .key-input-wrap._has-value .key-clear-btn {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .key-clear-btn:hover {
+            color: var(--danger);
+            background: var(--danger-dim);
+            border-left-color: rgba(235,87,87,.3);
+            opacity: 1;
+        }
+
+        /* ── Script mode toggle ──────────────────────────── */
+        .script-mode-toggle-wrap {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+        .script-mode-toggle {
+            display: flex;
+            gap: 2px;
+            background: var(--bg);
+            padding: 2px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-strong);
+        }
+        .script-mode-btn {
+            padding: 4px 8px;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: calc(var(--radius-sm) - 2px);
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            letter-spacing: -0.05px;
+            line-height: 1;
+            transition: background .12s, color .12s;
+        }
+        .script-mode-btn:hover:not(._active) { background: var(--surface-raised); color: var(--text); opacity: 1; }
+        .script-mode-btn._active { background: var(--surface-raised); color: var(--text); }
+        .script-mode-btn._active[data-mode="preset"] { background: var(--amber-dim); color: var(--amber); }
+        .timing-btn._active { background: var(--amber-dim); color: var(--amber); }
+        .ua-mode-btn._active[data-mode="preset"],
+        .block-mode-btn._active[data-mode="preset"] { background: var(--violet-dim); color: var(--violet); }
+
+        /* ── Browser action select ───────────────────────── */
+        .preset-action-select {
+            display: flex;
+            flex-direction: column;
+        }
+        .ba-categories {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            margin: 4px 0px;
+        }
+        .ba-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin-top: 6px;
+        }
+        .ba-btn {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 3px;
+            padding: 10px 12px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            text-align: left;
+            transition: background .12s, border-color .12s;
+        }
+        .ba-btn:hover { background: var(--bg); opacity: 1; border-color: var(--border-strong); }
+        .ba-btn._active { border-color: var(--amber); background: linear-gradient(var(--amber-dim), var(--amber-dim)) var(--surface); }
+        .ba-clear {
+            display: none;
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            width: 20px;
+            height: 20px;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            color: var(--text-muted);
+            border-radius: 3px;
+            cursor: default;
+            user-select: none;
+        }
+        ._active > .ba-clear { display: flex; }
+        .ba-clear:hover { background: rgba(255,255,255,0.1); color: var(--gray-50); }
+        .ba-name {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            letter-spacing: -0.1px;
+            white-space: normal;
+            width: 100%;
+        }
+        .ba-desc {
+            font-size: 11px;
+            color: var(--text-dim);
+            line-height: 1.4;
+            white-space: normal;
+            width: 100%;
+        }
+        .ba-btn._active .ba-name { color: var(--amber); }
+        .ba-btn._active .ba-desc { color: var(--text-muted); }
+        .ua-preset-select .ba-group { grid-template-columns: 1fr; }
+        .ua-preset-btn { gap: 4px; }
+        .ua-preset-btn::after {
+            content: attr(data-ua);
+            font-size: 11px;
+            color: var(--text-dim);
+            font-family: 'Courier New', monospace;
+            white-space: normal;
+            word-break: break-all;
+            align-self: stretch;
+        }
+        .ua-preset-btn._active { border-color: var(--violet); background: linear-gradient(var(--violet-dim), var(--violet-dim)) var(--surface); }
+        .ua-preset-btn._active .ba-name { color: var(--violet); }
+        .ua-preset-btn._active::after { color: var(--text-muted); }
+
+        /* ── Block presets ──────────────────────────────── */
+        .block-preset-select { display: flex; flex-direction: column; gap: 4px; margin: 4px 0px;}
+        .bp-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: background .12s, border-color .12s;
+            box-shadow: var(--shadow-subtle-2);
+            text-align: left;
+        }
+        .bp-item:hover { background: var(--bg); border-color: var(--border-strong); }
+        .bp-item._active { border-color: var(--violet); background: linear-gradient(var(--violet-dim), var(--violet-dim)) var(--surface); }
+        .bp-checkbox {
+            flex-shrink: 0;
+            width: 28px;
+            height: 16px;
+            border: 2px solid var(--border-strong);
+            border-radius: 4px;
+            background: transparent;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: background .15s, border-color .15s;
+        }
+        .bp-checkbox::after { display: none; }
+        .bp-item._active .bp-checkbox {
+            background: var(--violet);
+            border-color: var(--violet);
+        }
+        .bp-item._active .bp-checkbox::after {
+            content: '';
+            display: block;
+            width: 8px;
+            height: 5px;
+            border-left: 2px solid #fff;
+            border-bottom: 2px solid #fff;
+            transform: rotate(-45deg) translateY(-1px);
+        }
+        .bp-info { display: flex; flex-direction: row; gap: 12px; flex: 1; min-width: 0; align-items: baseline; }
+        .bp-name { font-size: 12px; font-weight: 600; color: var(--text-muted); letter-spacing: -0.1px; }
+        .bp-desc { font-size: 11px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .bp-item._active .bp-name { color: var(--violet); }
+
+        /* ── Gesture display ────────────────────────────── */
+        .gesture-display-wrap {
+            position: relative;
+            display: flex;
+            min-height: 36px;
+            background: transparent;
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius);
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 4px;
+            overflow: hidden;
+        }
+        .gesture-display {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 4px;
+            padding: 6px 6px 6px 8px;
+        }
+        .gesture-chip {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px 6px;
+            background: var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-sub);
+            letter-spacing: 0;
+            line-height: 1;
+        }
+        .gesture-chip-dir { font-size: 14px; padding: 2px 7px; }
+        .gesture-sep { font-size: 11px; color: var(--text-muted); font-weight: 600; line-height: 1; }
+        .gesture-placeholder { font-size: 12px; color: var(--text-muted); opacity: .45; user-select: none; }
+
+        /* ── Gesture pad ────────────────────────────────── */
+        .gesture-pad {
+            display: flex;
+            align-items: stretch;
+            gap: 20px;
+            padding: 6px 0px;
+        }
+        .gp-group {
+            display: flex;
+            flex: 1;
+            gap: 4px;
+        }
+        .gp-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            height: 38px;
+            padding: 8px 4px;
+            font-size: 12px;
+            font-weight: 500;
+            background: var(--surface);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-sm);
+            color: var(--text-muted);
+            cursor: pointer;
+            line-height: 1;
+            letter-spacing: 0;
+            white-space: nowrap;
+            transition: background .12s, border-color .12s, color .12s;
+        }
+        .gp-btn:hover { background: var(--surface-raised); border-color: var(--border-strong); color: var(--text); opacity: 1; }
+        .gp-back-btn {
+            background: transparent;
+            border: none;
+            border-left: 1px solid transparent;
+            border-radius: 0;
+            flex: 0;
+            flex-shrink: 0;
+            padding: 0 12px;
+            font-size: 13px;
+            color: var(--text-muted);
+            display: flex;
+            height: auto;
+            align-self: stretch;
+        }
+        .gp-back-btn:hover { color: var(--danger); border-left-color: rgba(235,87,87,.3); background: var(--danger-dim); opacity: 1; }
+        .gp-dir-btn { font-size: 13px; }
+        .gp-set-btn._active { border-color: var(--amber); color: var(--amber); background: linear-gradient(var(--amber-dim), var(--amber-dim)) var(--surface); }
+        .gp-btn:disabled, .gp-btn:disabled:hover { opacity: 0.28; cursor: default; background: transparent; border-color: var(--border); color: var(--text-muted); }
+
+        /* ── Save shortcut hint ─────────────────────────── */
+        .save-shortcut-hint {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            margin-left: 8px;
+            margin-right: 2px;
+        }
+        .save-shortcut-hint kbd {
+            font-size: 10px;
+            font-family: inherit;
+            font-weight: 500;
+            background: var(--surface-raised);
+            border: 1px solid var(--border-strong);
+            border-radius: 3px;
+            padding: 2px 5px;
+            color: var(--text-muted);
+            letter-spacing: 0;
+            line-height: 1.4;
+        }
+
+        /* ── Key badge in script list ────────────────────── */
+        ul.line li .left { display: flex; align-items: center; gap: 8px; }
+        ul.line li .left h1 { flex: 1; }
+        ul.line li .left .line-name {
+
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            min-width: 0;
+            width: fit-content;
+        }
+        .gesture-badge {
+            color: var(--amber) !important;
+            background: var(--amber-dim) !important;
+        }
+        .key-badge {
+            font-size: 11px;
+            color: var(--amber);
+            background: var(--amber-dim);
+            padding: 1px 6px;
+            border-radius: var(--radius-sm);
+            white-space: nowrap;
+            flex-shrink: 0;
+            letter-spacing: -0.1px;
+        }
+        .preset-icon {
+            display: flex;
+            flex-shrink: 0;
+            color: var(--gray-400);
+            opacity: 0.6;
+        }
+        ul.line li:not([data-action=note]) .activate-check:not(:checked) ~ .left .preset-icon {
+            color: var(--text-dim);
+        }
+        .active-dot {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: var(--green);
+            flex-shrink: 0;
+            visibility: hidden;
+        }
+        .active-dot._active { visibility: visible; }
+        .CodeMirror-lines {
+            padding: 8px 0px 4px 0px;
+        }
     </style>
 </head>
 <body>
-    <div class="popup">
-        <section>
-            <div class="header">
-                <div class="line">
-                    <h1 class="left">스크립트 설정</h1>
-                    <input type="button" id="delete" />
-                    <label for="delete" class="right">X</label>
-                </div>
-                <div class="line">
-                    <div class="right">
-                        <button data-action="delete">Delete</button>
-                        <button data-action="save">Save</button>
-                    </div>
-                    <select name="action">
-                        <option value="user agent">user agent</option>
-                        <option value="instant">instant</option>
-                        <option value="style">style</option>
-                        <option value="key">key</option>
-                    </select>
-                    <input type="text" name="name" placeholder="스크립트 이름" style="width:calc(100% - 450px)">
-                    <input type="text" name="key" placeholder="키 입력" style="width:80px">
-                </div>
-                <textarea name="url" placeholder="적용할 URL (엔터키로 구분합니다.)"></textarea>
-            </div>
-            <textarea id="free" name="script" placeholder="스크립트 입력란"></textarea>
-        </section>
-        <div class="dim"></div>
-    </div>  
-    <div class="top">
-        <img class="left" src="/image/icon.png" style="width:40px;height:40px;margin:10px 10px 10px 0px;filter:grayscale(1);">
-        <h1 style="float:left; margin-top:16px;">Uska editor 0.24</h1>
 
-        <div class="right">
-            <h2 data-action="source" style="cursor:pointer;display:inline-block;">오픈소스 사용 정보</h2>
-            <button data-action="import">Import</button>
-            <button class="right" data-action="add">Add</button>
+    <!-- ── Main layout ────────────────────────────── -->
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div id="option" data-action="source" title="오픈소스 정보" data-i18n-title="openSourceTitle">
+                        <img src="image/logo_symbol.svg" alt="Uska">
+                    </div>
+                    <img src="image/logo_text.svg" class="logo-svg" alt="Uska Editor">
+                </div>
+                <button type="button" class="settings-btn" id="settings-open-btn" title="설정" data-i18n-title="settingsTitle">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="sidebar-list"></div>
+            <div class="sidebar-footer">
+                <button type="button" class="sf-add" data-action="new-group">
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                        <path d="M5 1v8M1 5h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    <span data-i18n="addGroupBtn">그룹 추가</span>
+                </button>
+                <button type="button" class="sf-import" data-action="import" title="그룹 가져오기" data-i18n-title="importGroupTitle"></button>
+            </div>
+        </aside>
+        <div class="content">
+            <div class="content-header"></div>
+            <div class="scripts-container"></div>
         </div>
     </div>
-    <script src="script/option.js"></script>
+
+    <!-- ── Dim overlay ────────────────────────────── -->
+    <div class="dim"></div>
+
+    <!-- ── User Scripts warning modal ───────────────── -->
+    <div class="settings-dim" id="us-warning-dim"></div>
+    <div class="settings-popup" id="us-warning-popup">
+        <div class="popup-header">
+            <h1 class="popup-title" data-i18n="usWarningTitle">사용자 스크립트 허용 필요</h1>
+        </div>
+        <div class="popup-body">
+            <p class="us-warning-p1" data-i18n-html="usWarningP1"></p>
+            <p class="us-warning-p2" data-i18n-html="usWarningP2"></p>
+            <ol class="us-warning-steps">
+                <li data-i18n-html="usWarningStep1"></li>
+                <li data-i18n-html="usWarningStep2"></li>
+                <li data-i18n-html="usWarningStep3"></li>
+                <li data-i18n="usWarningStep4"></li>
+            </ol>
+        </div>
+        <div class="popup-footer">
+            <button type="button" class="btn-ghost" id="us-warning-dismiss-btn" data-i18n="usWarningDismissBtn">다시 알리지 않음</button>
+            <button type="button" class="btn _fill" id="us-warning-close-btn" data-i18n="usWarningOkBtn">확인</button>
+        </div>
+    </div>
+
+    <!-- ── Settings dim + modal ──────────────────── -->
+    <div class="settings-dim" id="settings-dim"></div>
+    <div class="settings-popup" id="settings-popup">
+        <div class="popup-header">
+            <h1 class="popup-title" data-i18n="settingsTitle">설정</h1>
+            <button type="button" class="popup-close" id="settings-close-btn"></button>
+        </div>
+        <div class="popup-body">
+            <div class="settings-row">
+                <span class="settings-row-label" data-i18n="themeLabel">테마</span>
+                <div class="theme-segmented" id="theme-segmented">
+                    <button type="button" class="theme-seg-btn" data-theme="dark" data-i18n="themeDarkBtn">다크</button>
+                    <button type="button" class="theme-seg-btn" data-theme="light" data-i18n="themeLightBtn">라이트</button>
+                </div>
+            </div>
+            <div class="settings-row">
+                <div class="settings-row-info">
+                    <span class="settings-row-label" data-i18n="exportAllLabel">전체 내보내기</span>
+                    <span class="settings-row-sub" data-i18n="exportAllDesc">모든 그룹을 JSON 파일로 저장합니다.</span>
+                </div>
+                <button type="button" class="btn-secondary" id="settings-export-btn" data-i18n="exportTitle">내보내기</button>
+            </div>
+            <div class="settings-row">
+                <div class="settings-row-info">
+                    <span class="settings-row-label" data-i18n="importAllLabel">전체 가져오기</span>
+                    <span class="settings-row-sub" data-i18n="importAllDesc">JSON 파일에서 그룹을 불러옵니다. 기존 데이터에 추가됩니다.</span>
+                </div>
+                <button type="button" class="btn-secondary" id="settings-import-btn" data-i18n="importBtn">가져오기</button>
+                <input type="file" id="settings-import-file" accept=".json" class="_hidden">
+            </div>
+            <div class="settings-row">
+                <div class="settings-row-info">
+                    <span class="settings-row-label" data-i18n="resetLabel">초기화</span>
+                    <span class="settings-row-sub" data-i18n="resetDesc">모든 그룹과 스크립트를 삭제합니다.</span>
+                </div>
+                <button type="button" class="settings-reset-btn" id="settings-reset-btn" data-i18n="resetBtn">초기화</button>
+            </div>
+        </div>
+        <div class="popup-footer">
+            <span id="version-label" style="font-size:11px;color:var(--text-muted);">Version</span>
+            <button type="button" class="btn-primary" id="settings-done-btn" data-i18n="doneBtn">완료</button>
+        </div>
+    </div>
+
+    <!-- ── Import select modal ──────────────────────── -->
+    <div class="import-select-dim" id="import-select-dim"></div>
+    <div class="import-select-popup" id="import-select-popup">
+        <div class="popup-header">
+            <h1 class="popup-title" data-i18n="importSelectTitle">가져올 그룹 선택</h1>
+            <button type="button" class="popup-close" id="import-select-close"></button>
+        </div>
+        <ul class="import-select-body" id="import-select-list"></ul>
+        <div class="popup-footer">
+            <button type="button" class="btn-ghost" id="import-select-toggle"></button>
+            <div class="popup-footer-right">
+                <button type="button" class="btn-ghost" id="import-select-cancel" data-i18n="cancelRecordBtn">취소</button>
+                <button type="button" class="btn-primary" id="import-select-confirm"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Edit modal ─────────────────────────────── -->
+    <div class="popup">
+        <div class="popup-header">
+            <div class="popup-header-left">
+                <h1 class="popup-title"></h1>
+                <div class="field-row">
+                    <div class="field _hidden" data-field="group">
+                        <span class="field-label" data-i18n="groupLabel">그룹</span>
+                        <select name="group"></select>
+                    </div>
+                    <div class="field _hidden" data-field="name">
+                        <span class="field-label" data-i18n="nameLabel">이름</span>
+                        <input type="text" name="name" placeholder="스크립트 이름" data-i18n-placeholder="scriptNameHolder">
+                    </div>
+                </div>
+            </div>
+            <div class="popup-header-right">
+                <span class="action-display _hidden"></span>
+                <button class="popup-close" type="button"></button>
+            </div>
+        </div>
+
+        <div class="popup-body">
+
+<div class="field _hidden" data-field="action-select">
+                <div class="action-select-categories">
+                    <div>
+                        <span class="asb-cat-label">JavaScript</span>
+                        <div class="asb-group">
+                            <button type="button" class="action-select-btn" data-action="pick-action" data-value="instant">
+                                <span class="asb-name">instant</span>
+                                <span class="asb-desc" data-i18n="instantDesc">페이지 접속 시 바로 실행됩니다. DOM 조작, 리디렉션 등 자동화 작업에 적합합니다.</span>
+                            </button>
+                            <button type="button" class="action-select-btn" data-action="pick-action" data-value="key">
+                                <span class="asb-name">key</span>
+                                <span class="asb-desc" data-i18n="keyDesc">지정한 단축키를 누를 때 실행됩니다. 반복 작업을 키보드로 트리거할 수 있습니다.</span>
+                            </button>
+                            <button type="button" class="action-select-btn" data-action="pick-action" data-value="gesture">
+                                <span class="asb-name">gesture (beta)</span>
+                                <span class="asb-desc" data-i18n="gestureDesc">마우스 제스처로 JavaScript를 실행합니다. 드래그 방향(R/L/U/D), 휠(WU/WD), 로커(RMB+LMB, LMB+RMB)를 지원합니다.</span>
+                            </button>
+                            <button type="button" class="action-select-btn" data-action="pick-action" data-value="library">
+                                <span class="asb-name">library (beta)</span>
+                                <span class="asb-desc" data-i18n="libraryDesc">JavaScript 실행 직전에 코드를 Prepend합니다. 같은 그룹 내에서 Export/Import 문법으로 함수를 공유할 수 있습니다.</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="asb-cat-label">CSS</span>
+                        <div class="asb-group">
+                            <button type="button" class="action-select-btn" data-action="pick-action" data-value="style">
+                                <span class="asb-name">style</span>
+                                <span class="asb-desc" data-i18n="styleDesc">페이지에 CSS를 삽입합니다. 레이아웃 변경, 요소 숨기기 등 스타일 커스터마이징에 사용합니다.</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="asb-cat-label">NET</span>
+                        <div class="asb-group">
+                            <button type="button" class="action-select-btn" data-action="pick-action" data-value="user agent">
+                                <span class="asb-name">user agent</span>
+                                <span class="asb-desc" data-i18n="userAgentDesc">HTTP 요청의 User-Agent 헤더를 변조합니다. 특정 브라우저나 기기로 인식되도록 우회할 수 있습니다.</span>
+                            </button>
+                            <button type="button" class="action-select-btn" data-action="pick-action" data-value="block">
+                                <span class="asb-name">block</span>
+                                <span class="asb-desc" data-i18n="blockDesc">URL 패턴에 일치하는 네트워크 요청을 차단합니다. 광고, 트래커, 불필요한 리소스를 제거할 수 있습니다.</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="asb-cat-label">OTHER</span>
+                        <div class="asb-group">
+                            <button type="button" class="action-select-btn" data-action="pick-action" data-value="note">
+                                <span class="asb-name">NOTE</span>
+                                <span class="asb-desc" data-i18n="noteDesc">단순 텍스트입니다. 스크립트 동작 설명, 참고 링크, 주의사항 등을 기록해두는 용도로 사용합니다.</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <input type="hidden" name="action" value="instant">
+
+            <div class="field _hidden" data-field="key">
+                <div class="field-label-row">
+                    <span class="field-label" data-i18n="shortcutLabel">단축키</span>
+                    <div class="key-input-allow-wrap">
+                        <input type="checkbox" class="key-input-allow-check" name="key-input-allow" id="popup-key-input-allow">
+                        <label class="key-input-allow-label" for="popup-key-input-allow"></label>
+                        <label class="key-input-allow-text" for="popup-key-input-allow" data-i18n="inputAllowLabel">입력 필드에서도 허용</label>
+                    </div>
+                </div>
+                <div class="key-record-wrap">
+                    <div class="key-input-wrap">
+                        <button type="button" class="key-record-btn" data-i18n="recordBtn">기록</button>
+                        <input type="hidden" name="key">
+                        <div class="key-chip-display"></div>
+                        <button type="button" class="key-clear-btn" title="단축키 제거" data-i18n-title="clearShortcutTitle"></button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="field _hidden" data-field="gesture-trigger">
+                <span class="field-label"><span data-i18n="gestureLabel">마우스 제스처</span>
+                    <span class="field-hint">— <span data-i18n="gestureHint">버튼을 누른 순서가 제스처 조건과 일치해야 합니다</span></span>
+                </span>
+                <input type="hidden" name="gesture-trigger">
+                <div class="gesture-display-wrap">
+                    <div class="gesture-display"><span class="gesture-placeholder" data-i18n="gesturePlaceholder">먼저 클릭 버튼을 선택해주세요.</span></div>
+                    <button type="button" class="gp-btn gp-back-btn"></button>
+                </div>
+                <div class="gesture-pad">
+                    <div class="gp-group">
+                        <button type="button" class="gp-btn gp-set-btn" data-trigger="LMB" data-i18n="gestureLmbLabel">좌클릭</button>
+                        <button type="button" class="gp-btn gp-set-btn" data-trigger="RMB" data-i18n="gestureRmbLabel">우클릭</button>
+                    </div>
+                    <div class="gp-group">
+                        <button type="button" class="gp-btn gp-dir-btn" data-dir="L">←</button>
+                        <button type="button" class="gp-btn gp-dir-btn" data-dir="U">↑</button>
+                        <button type="button" class="gp-btn gp-dir-btn" data-dir="D">↓</button>
+                        <button type="button" class="gp-btn gp-dir-btn" data-dir="R">→</button>
+                    </div>
+                    <div class="gp-group">
+                        <button type="button" class="gp-btn gp-set-btn" data-trigger="WU" data-i18n="gestureWuLabel">휠 업</button>
+                        <button type="button" class="gp-btn gp-set-btn" data-trigger="WD" data-i18n="gestureWdLabel">휠 다운</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="field _hidden" data-field="library-id">
+                <div class="field-label-row">
+                    <span class="field-label" data-i18n="libraryIdLabel">라이브러리 ID</span>
+                </div>
+                <div class="input-prefix-wrap">
+                    <span class="input-prefix">uska:</span>
+                    <input type="text" name="library-id" placeholder="id">
+                </div>
+            </div>
+
+            <div class="field _hidden" data-field="url">
+                <span class="field-label">
+                    적용 URL
+                    <span class="field-hint">— 한 줄에 하나씩, 비우면 모든 페이지</span>
+                </span>
+                <textarea name="url" placeholder="*.example.com&#10;/^https:\/\/example\.com\//"></textarea>
+            </div>
+
+            <div class="field _hidden" data-field="script">
+                <div class="field-label-row">
+                    <span class="field-label">스크립트</span>
+                    <div class="script-mode-toggle-wrap _hidden">
+                        <input type="hidden" name="script-mode" value="script">
+                        <div class="script-mode-toggle">
+                            <button type="button" class="script-mode-btn _active" data-mode="script" data-i18n="editorModeBtn">에디터</button>
+                            <button type="button" class="script-mode-btn" data-mode="preset" data-i18n="quickSettingsBtn">빠른 설정</button>
+                        </div>
+                    </div>
+                    <div class="ua-mode-toggle-wrap _hidden">
+                        <div class="script-mode-toggle">
+                            <button type="button" class="script-mode-btn ua-mode-btn _active" data-mode="input" data-i18n="editorModeBtn">에디터</button>
+                            <button type="button" class="script-mode-btn ua-mode-btn" data-mode="preset" data-i18n="quickSettingsBtn">빠른 설정</button>
+                        </div>
+                    </div>
+                    <div class="block-mode-toggle-wrap _hidden">
+                        <div class="script-mode-toggle">
+                            <button type="button" class="script-mode-btn block-mode-btn _active" data-mode="input" data-i18n="editorModeBtn">에디터</button>
+                            <button type="button" class="script-mode-btn block-mode-btn" data-mode="preset" data-i18n="quickSettingsBtn">빠른 설정</button>
+                        </div>
+                    </div>
+                </div>
+                <textarea name="script" placeholder="// JavaScript / CSS / User-Agent 문자열 입력"></textarea>
+                <div class="cm-statusbar"><span class="cm-cursor-pos">1:1</span></div>
+                <div class="library-hint _hidden">
+                    <span class="lh-label" data-i18n="librarySyntaxLabel">사용 가능한 문법</span>
+                    <div class="lh-row">
+                        <div class="lh-col">
+                            <code>export function <em>foo</em>() {}</code>
+                            <code>export const <em>X</em> = ...</code>
+                            <code>export default function <em>foo</em>() {}</code>
+                        </div>
+                        <div class="lh-col">
+                            <code>import { <em>foo</em> } from 'uska:<em>id</em>'</code>
+                            <code>import <em>foo</em> from 'uska:<em>id</em>'</code>
+                        </div>
+                    </div>
+                </div>
+                <div class="preset-action-select _hidden">
+                    <input type="hidden" name="preset-action" value="">
+                    <div class="ba-categories">
+                        <div class="ba-cat">
+                            <span class="asb-cat-label" data-i18n="catTab">탭</span>
+                            <div class="ba-group">
+                                <button type="button" class="ba-btn" data-ba="tab-prev">
+                                    <span class="ba-name" data-i18n="baTabPrevName">이전 탭</span>
+                                    <span class="ba-desc" data-i18n="baTabPrevDesc">왼쪽 탭으로 이동</span>
+                                </button>
+                                <button type="button" class="ba-btn" data-ba="tab-next">
+                                    <span class="ba-name" data-i18n="baTabNextName">다음 탭</span>
+                                    <span class="ba-desc" data-i18n="baTabNextDesc">오른쪽 탭으로 이동</span>
+                                </button>
+                                <button type="button" class="ba-btn" data-ba="tab-close">
+                                    <span class="ba-name" data-i18n="baTabCloseName">탭 닫기</span>
+                                    <span class="ba-desc" data-i18n="baTabCloseDesc">현재 탭을 닫습니다</span>
+                                </button>
+                                <button type="button" class="ba-btn" data-ba="tab-new">
+                                    <span class="ba-name" data-i18n="baTabNewName">새 탭</span>
+                                    <span class="ba-desc" data-i18n="baTabNewDesc">새 탭을 엽니다. 링크 위에서 시작하면 해당 링크를 엽니다</span>
+                                </button>
+                                <button type="button" class="ba-btn" data-ba="tab-duplicate">
+                                    <span class="ba-name" data-i18n="baTabDuplicateName">탭 복제</span>
+                                    <span class="ba-desc" data-i18n="baTabDuplicateDesc">현재 탭을 복제합니다</span>
+                                </button>
+                                <button type="button" class="ba-btn" data-ba="tab-pin">
+                                    <span class="ba-name" data-i18n="baTabPinName">탭 고정</span>
+                                    <span class="ba-desc" data-i18n="baTabPinDesc">탭 고정 상태를 전환합니다</span>
+                                </button>
+                                <button type="button" class="ba-btn" data-ba="tab-mute">
+                                    <span class="ba-name" data-i18n="baTabMuteName">탭 음소거</span>
+                                    <span class="ba-desc" data-i18n="baTabMuteDesc">탭 음소거 상태를 전환합니다</span>
+                                </button>
+                                <button type="button" class="ba-btn" data-ba="tab-detach">
+                                    <span class="ba-name" data-i18n="baTabDetachName">새 창으로 분리</span>
+                                    <span class="ba-desc" data-i18n="baTabDetachDesc">현재 탭을 새 창으로 분리합니다</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="ba-cat">
+                            <span class="asb-cat-label" data-i18n="catNavigation">탐색</span>
+                            <div class="ba-group">
+                                <button type="button" class="ba-btn" data-ba="nav-back">
+                                    <span class="ba-name" data-i18n="baNavBackName">뒤로</span>
+                                    <span class="ba-desc" data-i18n="baNavBackDesc">이전 페이지로 이동</span>
+                                </button>
+                                <button type="button" class="ba-btn" data-ba="nav-forward">
+                                    <span class="ba-name" data-i18n="baNavForwardName">앞으로</span>
+                                    <span class="ba-desc" data-i18n="baNavForwardDesc">다음 페이지로 이동</span>
+                                </button>
+                                <button type="button" class="ba-btn" data-ba="nav-reload">
+                                    <span class="ba-name" data-i18n="baNavReloadName">새로고침</span>
+                                    <span class="ba-desc" data-i18n="baNavReloadDesc">현재 페이지를 새로고침합니다</span>
+                                </button>
+                                <button type="button" class="ba-btn" data-ba="nav-reload-hard">
+                                    <span class="ba-name" data-i18n="baNavReloadHardName">강력 새로고침</span>
+                                    <span class="ba-desc" data-i18n="baNavReloadHardDesc">캐시 무시하고 새로고침합니다</span>
+                                </button>
+                                <button type="button" class="ba-btn" data-ba="nav-stop">
+                                    <span class="ba-name" data-i18n="baNavStopName">로드 중단</span>
+                                    <span class="ba-desc" data-i18n="baNavStopDesc">페이지 로드를 중단합니다</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="ba-cat">
+                            <span class="asb-cat-label" data-i18n="catScroll">스크롤</span>
+                            <div class="ba-group">
+                                <button type="button" class="ba-btn" data-ba="scroll-top">
+                                    <span class="ba-name" data-i18n="baScrollTopName">맨 위로</span>
+                                    <span class="ba-desc" data-i18n="baScrollTopDesc">페이지 맨 위로 스크롤</span>
+                                </button>
+                                <button type="button" class="ba-btn" data-ba="scroll-bottom">
+                                    <span class="ba-name" data-i18n="baScrollBottomName">맨 아래로</span>
+                                    <span class="ba-desc" data-i18n="baScrollBottomDesc">페이지 맨 아래로 스크롤</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="ba-cat">
+                            <span class="asb-cat-label" data-i18n="catPage">페이지</span>
+                            <div class="ba-group">
+                                <button type="button" class="ba-btn" data-ba="page-print">
+                                    <span class="ba-name" data-i18n="baPagePrintName">페이지 인쇄</span>
+                                    <span class="ba-desc" data-i18n="baPagePrintDesc">인쇄 대화상자를 엽니다</span>
+                                </button>
+                                <button type="button" class="ba-btn" data-ba="page-source">
+                                    <span class="ba-name" data-i18n="baPageSourceName">페이지 소스 보기</span>
+                                    <span class="ba-desc" data-i18n="baPageSourceDesc">새 탭에서 소스를 엽니다</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="ua-preset-select _hidden">
+                    <div class="ba-categories">
+                        <div class="ba-cat">
+                            <span class="asb-cat-label" data-i18n="catDesktop">데스크톱</span>
+                            <div class="ba-group">
+                                <button type="button" class="ba-btn ua-preset-btn" data-ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36">
+                                    <span class="ba-name">Windows / Chrome</span>
+                                </button>
+                                <button type="button" class="ba-btn ua-preset-btn" data-ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0">
+                                    <span class="ba-name">Windows / Firefox</span>
+                                </button>
+                                <button type="button" class="ba-btn ua-preset-btn" data-ua="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36">
+                                    <span class="ba-name">macOS / Chrome</span>
+                                </button>
+                                <button type="button" class="ba-btn ua-preset-btn" data-ua="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.2 Safari/605.1.15">
+                                    <span class="ba-name">macOS / Safari</span>
+                                </button>
+                                <button type="button" class="ba-btn ua-preset-btn" data-ua="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36">
+                                    <span class="ba-name">Linux / Chrome</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="ba-cat">
+                            <span class="asb-cat-label" data-i18n="catMobile">모바일</span>
+                            <div class="ba-group">
+                                <button type="button" class="ba-btn ua-preset-btn" data-ua="Mozilla/5.0 (Linux; Android 14; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.6778.135 Mobile Safari/537.36">
+                                    <span class="ba-name">Android / Chrome</span>
+                                </button>
+                                <button type="button" class="ba-btn ua-preset-btn" data-ua="Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Mobile/15E148 Safari/604.1">
+                                    <span class="ba-name">iPhone / Safari</span>
+                                </button>
+                                <button type="button" class="ba-btn ua-preset-btn" data-ua="Mozilla/5.0 (iPad; CPU OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Mobile/15E148 Safari/604.1">
+                                    <span class="ba-name">iPad / Safari</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="block-preset-select _hidden"></div>
+            </div>
+
+            <div class="field _hidden" data-field="timing">
+                <div class="field-label-row">
+                    <span class="field-label">타이밍</span>
+                    <div class="script-mode-toggle">
+                        <input type="hidden" name="timing" value="start">
+                        <button type="button" class="script-mode-btn timing-btn _active" data-timing="start">document_start</button>
+                        <button type="button" class="script-mode-btn timing-btn" data-timing="end">document_end</button>
+                        <button type="button" class="script-mode-btn timing-btn" data-timing="idle">document_idle</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="field _hidden" data-field="script-import">
+                <span class="field-label"><span data-i18n="importLabel">가져오기</span> <span class="field-hint">— <span data-i18n="importHint">JSON 또는 URL (한 줄에 하나)</span></span></span>
+                <textarea name="script-import" placeholder='{"action":"instant","name":"My Script","script":"alert(1)"}&#10;&#10;또는 JSON 파일 URL' data-i18n-placeholder="importHolder"></textarea>
+            </div>
+
+            <div class="field _hidden" data-field="group-import">
+                <span class="field-label"><span data-i18n="importLabel">가져오기</span> <span class="field-hint">— <span data-i18n="importHint">JSON 또는 URL (한 줄에 하나)</span></span></span>
+                <textarea name="group-import" placeholder='{"name":"새 그룹","contents":[...]}&#10;&#10;또는 JSON 파일 URL' data-i18n-placeholder="groupImportHolder"></textarea>
+            </div>
+
+            <div class="field _hidden" data-field="source-license">
+                <div class="license-list">
+                    <a class="license-item" href="https://craig.is/killing/mice" target="_blank">
+                        <span class="license-name">Mousetrap</span>
+                        <span class="license-meta">ccampbell · MIT<br>github.com/ccampbell/mousetrap</span>
+                    </a>
+                    <a class="license-item" href="https://codemirror.net" target="_blank">
+                        <span class="license-name">CodeMirror</span>
+                        <span class="license-meta">Marijn Haverbeke · MIT<br>codemirror.net</span>
+                    </a>
+                    <a class="license-item" href="https://github.com/orioncactus/pretendard" target="_blank">
+                        <span class="license-name">Pretendard Variable</span>
+                        <span class="license-meta">orioncactus · OFL<br>github.com/orioncactus/pretendard</span>
+                    </a>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="popup-footer">
+            <button data-action="delete" class="_hidden" data-i18n="deleteBtn">삭제</button>
+            <button data-action="export-script" class="btn-ghost _hidden" data-i18n="exportTitle">내보내기</button>
+            <button data-action="copy-prompt" class="btn-ghost select-action-copy _hidden" data-value="general" data-i18n="copyPromptBtn">Generate Prompt 복사</button>
+            <button data-action="import-script" class="btn-ghost select-action-import _hidden" data-i18n="importBtn">Import</button>
+            <div class="popup-footer-right">
+                <button data-action="discard" class="_hidden" data-i18n="discardBtn">변경 취소</button>
+                <span class="save-shortcut-hint _hidden"><kbd>Ctrl</kbd><kbd>↵</kbd></span>
+                <button data-action="done" class="btn-primary" data-i18n="doneBtn">완료</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="lib/codemirror/codemirror.min.js"></script>
+    <script src="lib/codemirror/mode/javascript.min.js"></script>
+    <script src="lib/codemirror/mode/css.min.js"></script>
+    <script src="lib/mousetrap/mousetrap.js"></script>
+    <script src="lib/mousetrap/mousetrap-record.min.js"></script>
+    <script type="module" src="lib/option.js"></script>
 </body>
 </html>

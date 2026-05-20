@@ -1,39 +1,46 @@
 {
-  "manifest_version": 2,
-  "name": "Uska editor",
-  "description": "Script injector",
-  "version": "0.24",
+  "manifest_version": 3,
+  "name": "__MSG_extName__",
+  "description": "__MSG_extDescription__",
+  "default_locale": "ko",
+  "version": "0.34",
   "permissions": [
-    "<all_urls>",
-    "webRequest",
-    "webRequestBlocking"
+    "storage",
+    "scripting",
+    "tabs",
+    "declarativeNetRequestWithHostAccess",
+    "userScripts"
   ],
-  "browser_action": {
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "action": {
     "default_icon": "image/icon.png",
     "default_popup": "option.html"
   },
   "options_ui": {
     "page": "option.html",
-    "open_in_tab": true,
-    "chrome_style": false
+    "open_in_tab": true
   },
   "background": {
-    "scripts": [
-      "script/background.js"
-    ]
+    "service_worker": "lib/background.js",
+    "type": "module"
   },
   "content_scripts": [
     {
       "js": [
-        "script/injector.js",
-        "script/mousetrap.js"
+        "lib/mousetrap/mousetrap.js",
+        "lib/injector.js"
       ],
       "matches": [ "<all_urls>" ],
       "run_at": "document_start"
     }
   ],
   "web_accessible_resources": [
-    "image/icon.png"
+    {
+      "resources": ["image/icon.png"],
+      "matches": ["<all_urls>"]
+    }
   ],
   "icons": {
     "128": "image/icon.png"
